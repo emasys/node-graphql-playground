@@ -2,9 +2,9 @@ import express from 'express';
 import log from 'fancy-log';
 import cors from 'cors';
 import { ApolloServer } from 'apollo-server-express';
-import { users } from './fakeDb';
 import resolvers from './resolvers';
 import schema from './schema';
+import models from './fakeDb';
 
 const app = express();
 app.use(cors());
@@ -13,7 +13,8 @@ const server = new ApolloServer({
   typeDefs: schema,
   resolvers,
   context: {
-    me: users[1],
+    models,
+    me: models.users[1],
   },
 });
 
