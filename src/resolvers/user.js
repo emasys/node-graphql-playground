@@ -1,11 +1,62 @@
+import jwt from 'jsonwebtoken';
+import { AuthenticationError, UserInputError } from 'apollo-server';
+
+const createToken = async (user, secret, expiresIn) => {
+  const { id, email, username } = user;
+  const response = await jwt.sign({ id, email, username }, secret, { expiresIn });
+  return response;
+};
+
 export default {
   Query: {
-    me: (parent, args, { me }) => me,
-    user: (parent, { id }, { models }) => models.users[id],
-    users: (parent, args, { models }) => Object.values(models.users),
+    me: async (parent, args, { models, me }) => {
+      if (!me) {
+        return null;
+      }
+      const response = await models.User.findById(me.id);
+      return response;
+    },
+    user: async (parent, { id }, { models }) => {
+      const response = await models.User.findById(id);
+      return response;
+    },
+    users: async (parent, args, { models }) => {
+      const users = await models.User.findAll();
+      return users;
+    },
+  },
+  Mutation: {
+    signUp: async (parent, { username, email, password }, { models, secret }) => {
+      const user = await models.User.create({
+        username,
+        email,
+        password,
+      });
+      const { newUsername } = user;
+      return { token: createToken(newUsername, secret, '30m') };
+    },
+    signIn: async (parent, { login, password }, { models, secret }) => {
+      const user = await models.User.findByLogin(login);
+
+      if (!user) {
+        throw new UserInputError('No user found with this login credentials.');
+      }
+
+      const isValid = await user.validatePassword(password);
+
+      if (!isValid) {
+        throw new AuthenticationError('Invalid password.');
+      }
+      const { username } = user;
+      return { token: createToken(username, secret, '30m') };
+    },
   },
   User: {
-    messages: (user, args, { models }) => Object.values(models.messages)
-      .filter(message => message.userId === models.user.id),
+    messages: async (user, args, { models }) => {
+      const response = await models.Message.findAll({
+        where: user.id,
+      });
+      return response;
+    },
   },
 };

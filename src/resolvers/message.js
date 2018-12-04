@@ -1,16 +1,57 @@
-import { newMessage, removeMessage, editMessage } from '../mutations';
+import { combineResolvers } from 'graphql-resolvers';
+import { isAuthenticated, isMessageOwner } from './authorization';
 
 export default {
   Query: {
-    messages: (parent, args, { models }) => Object.values(models.messages),
-    message: (parent, { id }, { models }) => models.messages[id],
+    messages: async (parent, args, { models }) => {
+      const response = await models.Message.findAll();
+      return response;
+    },
+    message: async (parent, { id }, { models }) => {
+      const response = await models.Message.findById(id);
+      return response;
+    },
   },
   Mutation: {
-    createMessage: (parent, { text }, { me, models }) => newMessage(text, me, models),
-    deleteMessage: (parent, { id }, { models }) => removeMessage(id, models),
-    updateMessage: (parent, { text, id }, { models }) => editMessage(text, id, models),
+    createMessage: combineResolvers(isAuthenticated, async (parent, { text }, { me, models }) => {
+      try {
+        const action = await models.Message.create({
+          text,
+          userId: me.id,
+        });
+        return action;
+      } catch (error) {
+        throw new Error(error);
+      }
+    }),
+    deleteMessage: combineResolvers(
+      isAuthenticated,
+      isMessageOwner,
+      async (parent, { id }, { models }) => {
+        const action = await models.Message.destroy({ where: { id } });
+        return action;
+      },
+    ),
+    updateMessage: combineResolvers(
+      isAuthenticated,
+      isMessageOwner,
+      async (parent, { text, id }, { models }) => {
+        const response = await models.Message.update(
+          {
+            text,
+          },
+          {
+            where: { id },
+          },
+        );
+        return response.length > 0;
+      },
+    ),
   },
   Message: {
-    user: (message, args, { models }) => models.users[message.userId],
+    user: async (message, args, { models }) => {
+      const response = await models.Message.findById(message.id);
+      return response;
+    },
   },
 };
