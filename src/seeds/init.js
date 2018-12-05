@@ -5,6 +5,7 @@ export const createUsersWithMessages = async (models) => {
       username: 'emasys',
       email: 'emasys@emasys.com',
       password: 'password',
+      role: 'ADMIN',
       messages: [
         {
           text: 'just testing out this stuff',

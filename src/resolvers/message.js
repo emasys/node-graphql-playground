@@ -13,17 +13,21 @@ export default {
     },
   },
   Mutation: {
-    createMessage: combineResolvers(isAuthenticated, async (parent, { text }, { me, models }) => {
-      try {
-        const action = await models.Message.create({
-          text,
-          userId: me.id,
-        });
-        return action;
-      } catch (error) {
-        throw new Error(error);
-      }
-    }),
+    createMessage: combineResolvers(
+      isAuthenticated,
+      async (parent, { text }, { me, models }) => {
+        try {
+          const action = await models.Message.create({
+            text,
+            userId: me.id,
+          });
+          return action;
+        } catch (error) {
+          throw new Error(error);
+        }
+      },
+    ),
+
     deleteMessage: combineResolvers(
       isAuthenticated,
       isMessageOwner,

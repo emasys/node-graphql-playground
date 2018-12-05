@@ -1,9 +1,23 @@
 import jwt from 'jsonwebtoken';
+import { combineResolvers } from 'graphql-resolvers';
 import { AuthenticationError, UserInputError } from 'apollo-server';
+import { isAdmin } from './authorization';
 
 const createToken = async (user, secret, expiresIn) => {
-  const { id, email, username } = user;
-  const response = await jwt.sign({ id, email, username }, secret, { expiresIn });
+  const {
+    id, email, username, role,
+  } = user;
+  const response = await jwt.sign(
+    {
+      role,
+      id,
+      email,
+      username,
+    },
+    secret,
+    { expiresIn },
+  );
+
   return response;
 };
 
@@ -32,8 +46,8 @@ export default {
         email,
         password,
       });
-      const { newUsername } = user;
-      return { token: createToken(newUsername, secret, '30m') };
+      const { newUsername, id, role } = user;
+      return { token: createToken({ newUsername, id, role }, secret, '30m') };
     },
     signIn: async (parent, { login, password }, { models, secret }) => {
       const user = await models.User.findByLogin(login);
@@ -47,9 +61,22 @@ export default {
       if (!isValid) {
         throw new AuthenticationError('Invalid password.');
       }
-      const { username } = user;
-      return { token: createToken(username, secret, '30m') };
+      const {
+        username, id, email, role,
+      } = user;
+      return {
+        token: createToken({
+          username, role, id, email,
+        }, secret, '30m'),
+      };
     },
+    deleteUser: combineResolvers(isAdmin, async (parent, { id }, { models }) => {
+      const response = await models.User.destroy({
+        where: { id },
+      });
+      return response;
+    }),
+
   },
   User: {
     messages: async (user, args, { models }) => {
