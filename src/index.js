@@ -28,9 +28,7 @@ const server = new ApolloServer({
   typeDefs: schema,
   resolvers,
   context: async ({ req }) => {
-    console.log(req);
     const me = await getMe(req);
-    console.log(me);
     return {
       models,
       me,

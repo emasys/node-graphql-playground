@@ -27,6 +27,7 @@ export default {
         }
       },
     ),
+
     deleteMessage: combineResolvers(
       isAuthenticated,
       isMessageOwner,

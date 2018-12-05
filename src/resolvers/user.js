@@ -17,6 +17,7 @@ const createToken = async (user, secret, expiresIn) => {
     secret,
     { expiresIn },
   );
+
   return response;
 };
 
@@ -75,6 +76,7 @@ export default {
       });
       return response;
     }),
+
   },
   User: {
     messages: async (user, args, { models }) => {
